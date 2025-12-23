@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herbert: The Algorithm Invitational</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Retro 2008 / Vista Aesthetics */
+        body {
+            background-color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .code-font {
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        /* Grid Animations */
+        .robot {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5));
+        }
+
+        .tile {
+            transition: all 0.3s;
+            position: absolute;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .tile.visited {
+            background-color: rgba(59, 130, 246, 0.15);
+            box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.05);
+        }
+
+        /* Wall Styling */
+        .tile.wall {
+            background-color: #334155;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                #1e293b 10px,
+                #1e293b 20px
+            );
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        /* Target Styling */
+        .tile.target {
+            background-color: rgba(16, 185, 129, 0.2);
+            border: 1px dashed rgba(16, 185, 129, 0.5);
+        }
+        .tile.target.collected {
+            background-color: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            opacity: 0.5;
+        }
+
+        /* Collision Animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        .wall-hit {
+            animation: shake 0.2s ease-in-out;
+            border: 1px solid #ef4444 !important;
+        }
+
+        /* Victory Overlay Animation */
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .victory-anim {
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        .editor-container {
+            position: relative;
+        }
+        textarea {
+            caret-color: #facc15;
+            outline: none;
+        }
+        
+        /* Modal */
+        .modal-bg {
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Select styling */
+        select {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            padding: 4px 8px;
+            border-radius: 4px;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="text-slate-200 h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b border-slate-700 bg-slate-900/80 flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md flex items-center justify-center font-bold text-white">h</div>
+            <h1 class="text-xl font-semibold tracking-wide text-slate-100">HERBERT <span class="text-slate-500 text-sm font-normal ml-2">ALGORITHM INVITATIONAL</span></h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <label class="text-xs text-slate-500">SELECT LEVEL:</label>
+            <select id="level-select" onchange="herbertApp.selectLevel(this.value)" class="text-sm">
+                <!-- Populated by JS -->
+            </select>
+            <div class="h-4 w-[1px] bg-slate-700"></div>
+            <button onclick="herbertApp.resetLevel()" class="text-sm hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded border border-slate-700">Reset Level</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left: Game View -->
+        <div class="flex-1 bg-slate-900/50 flex flex-col relative p-4">
+            <!-- Toolbar -->
+            <div class="absolute top-4 left-4 z-20 flex gap-2">
+                <div class="glass-panel px-3 py-1 rounded text-xs text-slate-300">
+                    Pos: <span id="debug-pos" class="font-mono text-blue-400">0,0</span>
+                </div>
+                <div class="glass-panel px-3 py-1 rounded text-xs text-slate-300">
+                    Targets: <span id="debug-targets" class="font-mono text-green-400">0/0</span>
+                </div>
+                <div class="glass-panel px-3 py-1 rounded text-xs text-slate-300">
+                    Status: <span id="game-status" class="font-bold text-slate-400">IDLE</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="flex-1 flex items-center justify-center overflow-auto" id="grid-container">
+                <div id="game-grid" class="relative bg-slate-800 border-2 border-slate-700 shadow-2xl transition-all duration-500">
+                    <!-- Grid generated by JS -->
+                </div>
+            </div>
+
+            <!-- Console/Status -->
+            <div class="h-32 glass-panel m-4 mt-0 rounded-lg p-3 font-mono text-xs overflow-y-auto flex flex-col-reverse" id="console-output">
+                <div class="text-slate-500">> System Ready. Waiting for input...</div>
+            </div>
+        </div>
+
+        <!-- Right: Code Editor -->
+        <div class="w-[450px] bg-slate-950 border-l border-slate-800 flex flex-col shadow-xl">
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-800 bg-slate-900 justify-between items-center pr-2">
+                <div class="flex">
+                    <button class="px-6 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 bg-slate-800/50">program.h</button>
+                    <button class="px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors" onclick="document.getElementById('help-modal').classList.remove('hidden')">Reference</button>
+                </div>
+                <!-- Speed Control -->
+                <div class="flex items-center gap-2 px-2">
+                    <span class="text-xs text-slate-500">Speed:</span>
+                    <input type="range" min="10" max="500" value="300" class="w-20" onchange="herbertApp.setSpeed(this.value)">
+                </div>
+            </div>
+
+            <!-- Editor -->
+            <div class="flex-1 relative editor-container bg-[#0d1117]">
+                <textarea id="code-input" 
+                    class="absolute inset-0 w-full h-full bg-transparent p-4 text-sm code-font resize-none text-slate-300 leading-relaxed" 
+                    spellcheck="false" 
+                    oninput="herbertApp.updateCharCount()"
+                    placeholder="// Write your H solution here..."></textarea>
+            </div>
+
+            <!-- Controls -->
+            <div class="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
+                <div class="flex gap-4 text-xs text-slate-500 font-mono">
+                    <span>Steps: <span id="step-count" class="text-slate-300">0</span></span>
+                    <span>Length: <span id="char-count" class="text-slate-300">0</span></span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="herbertApp.stop()" class="px-4 py-2 bg-red-900/50 hover:bg-red-800/50 text-red-200 text-sm font-medium rounded border border-red-800 transition-all hidden" id="stop-btn">
+                        Stop
+                    </button>
+                    <button onclick="herbertApp.runCode()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded shadow-lg shadow-blue-900/50 transition-all flex items-center gap-2" id="run-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-2.132z"></path></svg>
+                        Run
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 z-50 modal-bg hidden flex items-center justify-center p-8">
+        <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-w-2xl w-full max-h-full flex flex-col">
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white">H Language Reference</h2>
+                <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto text-sm text-slate-300 space-y-4 code-font leading-relaxed">
+                <div>
+                    <h3 class="text-blue-400 font-bold mb-1">Commands</h3>
+                    <p><code class="text-yellow-400">s</code> : Step forward</p>
+                    <p><code class="text-yellow-400">l</code> : Turn left</p>
+                    <p><code class="text-yellow-400">r</code> : Turn right</p>
+                </div>
+                <div>
+                    <h3 class="text-blue-400 font-bold mb-1">Functions & Recursion</h3>
+                    <p>Format: <code class="text-green-400">name</code>(params):body</p>
+                    <p class="text-slate-500 text-xs mt-1">Example 1: Parameter replacement</p>
+                    <pre class="bg-slate-950 p-2 rounded border border-slate-800 mt-1">m(X):XX  // m(s) -> ss</pre>
+                    <p class="text-slate-500 text-xs mt-1">Example 2: Numeric Recursion (Stops at 0)</p>
+                    <pre class="bg-slate-950 p-2 rounded border border-slate-800 mt-1">f(A):sf(A-1) // Steps A times</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victory-modal" class="fixed inset-0 z-50 modal-bg hidden flex items-center justify-center p-8">
+        <div class="victory-anim bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-green-500/50 rounded-xl shadow-[0_0_50px_rgba(16,185,129,0.2)] max-w-md w-full flex flex-col items-center p-8 text-center">
+            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4 text-green-400">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">Level Solved!</h2>
+            <p class="text-slate-400 text-sm mb-6">Excellent work, Engineer. Herbert has reached all targets.</p>
+            
+            <div class="grid grid-cols-2 gap-4 w-full mb-8">
+                <div class="bg-slate-950/50 p-3 rounded border border-slate-700">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider">Code Length</div>
+                    <div class="text-xl font-mono text-yellow-400" id="vic-chars">0</div>
+                </div>
+                <div class="bg-slate-950/50 p-3 rounded border border-slate-700">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider">Steps Taken</div>
+                    <div class="text-xl font-mono text-blue-400" id="vic-steps">0</div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button onclick="document.getElementById('victory-modal').classList.add('hidden')" class="flex-1 px-4 py-2 text-slate-400 hover:text-white text-sm font-medium transition-colors">Review Code</button>
+                <button onclick="herbertApp.nextLevelModal()" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded shadow-lg shadow-green-900/50 transition-all">Next Level &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * PARSER & INTERPRETER
+         * Full support for GRAMMAR provided in parser.py
+         */
+        const TOKENS = {
+            EOL: /\n/,
+            COMMAND: /^[slr]/,
+            NEG: /^-/,
+            MINUS: /^-/,
+            PLUS: /^\+/,
+            NUM: /^[0-9]+/,
+            PARAM: /^[A-Z]/,
+            PNAME: /^[a-z]/, // Excludes s,l,r via logic
+            LPAREN: /^\(/,
+            RPAREN: /^\)/,
+            COLON: /^:/,
+            COMMA: /^,/
+        };
+
+        class SyntaxError extends Error {
+            constructor(msg) { super(msg); this.name = "SyntaxError"; }
+        }
+
+        class Parser {
+            constructor(input) {
+                this.input = input.trim();
+                this.pos = 0;
+            }
+
+            peek() { return this.input.slice(this.pos); }
+            
+            consume(regex) {
+                const match = this.peek().match(regex);
+                if (match) {
+                    this.pos += match[0].length;
+                    return match[0];
+                }
+                return null;
+            }
+
+            skipWhitespace() {
+                while (this.pos < this.input.length && this.input[this.pos] === ' ') {
+                    this.pos++;
+                }
+            }
+
+            parse() {
+                const program = { defs: {}, main: [] };
+                
+                // Parse pdefs
+                while (true) {
+                    this.skipWhitespace();
+                    if (this.pos >= this.input.length) break;
+
+                    const savePos = this.pos;
+                    try {
+                        const def = this.parsePdef();
+                        if (def) {
+                            program.defs[def.name] = def;
+                            this.consume(TOKENS.EOL); // consume newline if present
+                            continue;
+                        }
+                    } catch (e) {
+                        this.pos = savePos;
+                    }
+                    break;
+                }
+
+                // Parse main
+                while (this.pos < this.input.length) {
+                    this.skipWhitespace();
+                    const stmt = this.parseStmt();
+                    if (stmt) {
+                        program.main.push(stmt);
+                    } else {
+                        if (this.consume(TOKENS.EOL)) continue;
+                        if (this.pos >= this.input.length) break;
+                        throw new SyntaxError(`Unexpected character at ${this.pos}: ${this.input[this.pos]}`);
+                    }
+                }
+                return program;
+            }
+
+            parsePdef() {
+                const name = this.consume(TOKENS.PNAME);
+                if (!name || ['s','l','r'].includes(name)) return null; 
+
+                let params = [];
+                if (this.consume(TOKENS.LPAREN)) {
+                    do {
+                        this.skipWhitespace();
+                        const p = this.consume(TOKENS.PARAM);
+                        if (!p) throw new SyntaxError("Expected PARAM in definition");
+                        params.push(p);
+                        this.skipWhitespace();
+                    } while (this.consume(TOKENS.COMMA));
+                    if (!this.consume(TOKENS.RPAREN)) throw new SyntaxError("Expected closing ')'");
+                }
+
+                this.skipWhitespace();
+                if (!this.consume(TOKENS.COLON)) throw new SyntaxError("Expected ':' after function definition");
+
+                const body = this.parseBody();
+                return { name, params, body };
+            }
+
+            parseBody() {
+                const body = [];
+                while (true) {
+                    this.skipWhitespace();
+                    if (this.peek().startsWith('\n') || this.pos >= this.input.length) break;
+                    
+                    const paramMatch = this.peek().match(TOKENS.PARAM);
+                    if (paramMatch) {
+                        body.push({ type: 'PARAM', value: this.consume(TOKENS.PARAM) });
+                        continue;
+                    }
+                    const stmt = this.parseStmt();
+                    if (stmt) {
+                        body.push(stmt);
+                        continue;
+                    }
+                    break; 
+                }
+                return body;
+            }
+
+            parseStmt() {
+                this.skipWhitespace();
+                const cmd = this.consume(TOKENS.COMMAND);
+                if (cmd) return { type: 'COMMAND', value: cmd };
+
+                const pname = this.consume(TOKENS.PNAME);
+                if (pname) {
+                    let args = [];
+                    if (this.consume(TOKENS.LPAREN)) {
+                        args = this.parseArgs();
+                        if (!this.consume(TOKENS.RPAREN)) throw new SyntaxError("Expected ')' after arguments");
+                    }
+                    return { type: 'CALL', name: pname, args };
+                }
+                return null;
+            }
+
+            parseArgs() {
+                const args = [];
+                do {
+                    this.skipWhitespace();
+                    args.push(this.parseArg());
+                    this.skipWhitespace();
+                } while (this.consume(TOKENS.COMMA));
+                return args;
+            }
+
+            parseArg() {
+                // Rule: ?arg : PARAM -> var | PARAM (stmt | PARAM)+ -> sexpr | stmt (stmt | PARAM)* -> sexpr | expr
+                this.skipWhitespace();
+                const peek = this.peek();
+                
+                // Case 1: Expression (Math) - Starts with NUM or NEG
+                if (peek.match(TOKENS.NUM) || peek.match(TOKENS.NEG)) {
+                    return this.parseExpr();
+                }
+
+                // Case 2: Starts with PARAM (A)
+                if (peek.match(TOKENS.PARAM)) {
+                    const paramName = this.consume(TOKENS.PARAM);
+                    
+                    this.skipWhitespace();
+                    const next = this.peek();
+                    
+                    // Is it math? (A-1 or A+1)
+                    if (next.match(TOKENS.PLUS) || next.match(TOKENS.MINUS)) {
+                        // Backtrack slightly to reuse parseExpr logic properly, or reconstruct
+                        // Simpler: Return an EXPR node constructed here
+                        return this.parseExprRest(paramName);
+                    }
+                    
+                    // Is it sexpr? (A s, A B, A l)
+                    if (next.match(TOKENS.COMMAND) || next.match(TOKENS.PNAME) || next.match(TOKENS.PARAM)) {
+                        const seq = [{ type: 'PARAM', value: paramName }];
+                        this.parseSExprRest(seq);
+                        return { type: 'BLOCK', body: seq };
+                    }
+                    
+                    // Otherwise it's just var (A, or A))
+                    return { type: 'PARAM', value: paramName };
+                }
+
+                // Case 3: Starts with Command/Call -> SExpr
+                const stmt = this.parseStmt();
+                if (stmt) {
+                    const seq = [stmt];
+                    this.parseSExprRest(seq);
+                    return { type: 'BLOCK', body: seq };
+                }
+
+                throw new SyntaxError("Invalid argument");
+            }
+
+            parseExpr() {
+                // Simplified expression parser: TERM ((PLUS|MINUS) TERM)*
+                let left = this.parseTerm();
+                while(true) {
+                    this.skipWhitespace();
+                    const next = this.peek();
+                    if (next.match(TOKENS.PLUS)) {
+                        this.consume(TOKENS.PLUS);
+                        const right = this.parseTerm();
+                        left = { type: 'EXPR_OP', op: '+', left, right };
+                    } else if (next.match(TOKENS.MINUS)) {
+                        this.consume(TOKENS.MINUS);
+                        const right = this.parseTerm();
+                        left = { type: 'EXPR_OP', op: '-', left, right };
+                    } else {
+                        break;
+                    }
+                }
+                return { type: 'EXPR', tree: left };
+            }
+
+            parseTerm() {
+                this.skipWhitespace();
+                const neg = this.consume(TOKENS.NEG);
+                let val;
+                
+                if (this.peek().match(TOKENS.NUM)) {
+                    val = { type: 'NUM', value: parseInt(this.consume(TOKENS.NUM)) };
+                } else if (this.peek().match(TOKENS.PARAM)) {
+                    val = { type: 'VAR', value: this.consume(TOKENS.PARAM) };
+                } else {
+                    throw new SyntaxError("Expected Number or Param in expression");
+                }
+
+                if (neg) return { type: 'EXPR_OP', op: 'NEG', right: val };
+                return val;
+            }
+
+            parseExprRest(firstParam) {
+                // Helper when we already consumed 'A'
+                let left = { type: 'VAR', value: firstParam };
+                while(true) {
+                    this.skipWhitespace();
+                    const next = this.peek();
+                    if (next.match(TOKENS.PLUS)) {
+                        this.consume(TOKENS.PLUS);
+                        const right = this.parseTerm();
+                        left = { type: 'EXPR_OP', op: '+', left, right };
+                    } else if (next.match(TOKENS.MINUS)) {
+                        this.consume(TOKENS.MINUS);
+                        const right = this.parseTerm();
+                        left = { type: 'EXPR_OP', op: '-', left, right };
+                    } else {
+                        break;
+                    }
+                }
+                return { type: 'EXPR', tree: left };
+            }
+
+            parseSExprRest(seq) {
+                // Keep consuming statements or params until we hit comma or rparen
+                while (true) {
+                    this.skipWhitespace();
+                    const next = this.peek();
+                    if (!next || next.startsWith(',') || next.startsWith(')')) break;
+                    
+                    if (next.match(TOKENS.PARAM)) {
+                        seq.push({ type: 'PARAM', value: this.consume(TOKENS.PARAM) });
+                        continue;
+                    }
+                    const stmt = this.parseStmt();
+                    if (stmt) {
+                        seq.push(stmt);
+                        continue;
+                    }
+                    break;
+                }
+            }
+        }
+
+        /**
+         * INTERPRETER
+         */
+        class Interpreter {
+            constructor(program) {
+                this.program = program;
+                this.executionStack = []; 
+            }
+
+            *createCommandGenerator() {
+                this.executionStack.push({
+                    commands: this.program.main,
+                    index: 0,
+                    vars: {}
+                });
+
+                while (this.executionStack.length > 0) {
+                    const frame = this.executionStack[this.executionStack.length - 1];
+
+                    if (frame.index >= frame.commands.length) {
+                        this.executionStack.pop();
+                        continue;
+                    }
+
+                    const stmt = frame.commands[frame.index];
+                    frame.index++; 
+
+                    if (stmt.type === 'COMMAND') {
+                        yield stmt.value; 
+                    } 
+                    else if (stmt.type === 'CALL') {
+                        this.handleCall(stmt, frame.vars);
+                    } 
+                    else if (stmt.type === 'PARAM') {
+                        this.handleParam(stmt, frame.vars);
+                    }
+                }
+            }
+
+            evaluate(node, vars) {
+                if (node.type === 'NUM') return node.value;
+                if (node.type === 'VAR') {
+                    const val = vars[node.value];
+                    if (typeof val !== 'number') throw new Error(`Variable ${node.value} is not a number`);
+                    return val;
+                }
+                if (node.type === 'EXPR_OP') {
+                    if (node.op === 'NEG') return -this.evaluate(node.right, vars);
+                    const l = this.evaluate(node.left, vars);
+                    const r = this.evaluate(node.right, vars);
+                    if (node.op === '+') return l + r;
+                    if (node.op === '-') return l - r;
+                }
+                return 0;
+            }
+
+            handleCall(stmt, currentVars) {
+                const def = this.program.defs[stmt.name];
+                if (!def) throw new Error(`Undefined function '${stmt.name}'`);
+
+                const newVars = {};
+                let numericArgValue = null;
+
+                if (def.params) {
+                    for (let i = 0; i < def.params.length; i++) {
+                        const paramName = def.params[i];
+                        const argVal = stmt.args[i];
+                        
+                        // Resolve Argument
+                        if (argVal && argVal.type === 'EXPR') {
+                            // Math expression -> Calculate Value
+                            const val = this.evaluate(argVal.tree, currentVars);
+                            newVars[paramName] = val;
+                            numericArgValue = val;
+                        } 
+                        else if (argVal && argVal.type === 'BLOCK') {
+                            // Code Block -> Pass AST
+                            newVars[paramName] = argVal;
+                        }
+                        else if (argVal && argVal.type === 'PARAM') {
+                            // Variable -> Pass value from current scope
+                            newVars[paramName] = currentVars[argVal.value];
+                            if (typeof newVars[paramName] === 'number') numericArgValue = newVars[paramName];
+                        }
+                        else if (argVal && argVal.type === 'COMMAND' || argVal.type === 'CALL') {
+                            // Single Stmt wrapped as Block
+                            newVars[paramName] = { type: 'BLOCK', body: [argVal] };
+                        }
+                    }
+                }
+
+                // RECURSION GUARD:
+                // If the function takes parameters and the *last* resolved parameter is a Number <= 0,
+                // we treat it as a base case and DO NOT execute the body.
+                // This is a standard convention for this type of language since there is no 'if'.
+                if (numericArgValue !== null && typeof numericArgValue === 'number' && numericArgValue <= 0) {
+                    return; 
+                }
+
+                this.executionStack.push({
+                    commands: def.body,
+                    index: 0,
+                    vars: newVars
+                });
+            }
+
+            handleParam(stmt, currentVars) {
+                const val = currentVars[stmt.value];
+                if (val === undefined) throw new Error(`Undefined variable ${stmt.value}`);
+                
+                // If val is a Number, it's a no-op as a statement.
+                if (typeof val === 'number') return;
+
+                let commandsToRun = [];
+                if (val.type === 'BLOCK') {
+                    commandsToRun = val.body;
+                } else {
+                    commandsToRun = [val]; 
+                }
+
+                this.executionStack.push({
+                    commands: commandsToRun,
+                    index: 0,
+                    vars: currentVars 
+                });
+            }
+        }
+
+        /**
+         * GAME LEVELS (10 Verified Levels)
+         */
+        const LEVELS = [
+            {
+                name: "The Awakening",
+                grid: [
+                    "WWWWWWWWWW",
+                    "W........W",
+                    "W.S....T.W",
+                    "W........W",
+                    "WWWWWWWWWW"
+                ],
+                startDir: 'right',
+                hint: "s"
+            },
+            {
+                name: "The Corner",
+                grid: [
+                    "WWWWWWWW",
+                    "W.....TW",
+                    "W.WWWWWW",
+                    "W.W",
+                    "W.S",
+                    "WWW"
+                ],
+                startDir: 'up',
+                hint: "sl"
+            },
+            {
+                name: "Stairway to Heaven",
+                grid: [
+                    "WWWWWWWW",
+                    "W.....TW",
+                    "W...WWWW",
+                    "W...W",
+                    "W.S.W",
+                    "WWWWW"
+                ],
+                startDir: 'right',
+                hint: "// ZigZag\nz:slsr\nz"
+            },
+            {
+                name: "Four Chambers",
+                grid: [
+                    "WWWWWWWWWW",
+                    "WT..W...TW",
+                    "W...W....W",
+                    "WWWWWW.WWW",
+                    "W...S....W",
+                    "W........W",
+                    "WT..W...TW",
+                    "WWWWWWWWWW"
+                ],
+                startDir: 'up',
+                hint: "// Visit 4 corners"
+            },
+            {
+                name: "The Slalom",
+                grid: [
+                    "WWWWWWWWWWWW",
+                    "WS.W...W...W",
+                    "WW.W.W.W.W.W",
+                    "W..W.W.W.W.T",
+                    "WWWWWWWWWWWW"
+                ],
+                startDir: 'right',
+                hint: ""
+            },
+            {
+                name: "The Spiral (Numeric)",
+                grid: [
+                    "WWWWWWWWWWW",
+                    "WTTTTTTTTTW",
+                    "WTWWWWWWWTW",
+                    "WTW.....WTW",
+                    "WTW.WWW.WTW",
+                    "WTW.WSW.WTW",
+                    "WTW.WWW.WTW",
+                    "WTW.....WTW",
+                    "WTWWWWWWWTW",
+                    "WTTTTTTTTTW",
+                    "WWWWWWWWWWW"
+                ],
+                startDir: 'up',
+                hint: "// Numeric Recursion\nf(A):slf(A-1)\nf(9)"
+            },
+            {
+                name: "Two Towers",
+                grid: [
+                    "WWWWWWWW",
+                    "WT....TW",
+                    "W.WWWW.W",
+                    "W.W..W.W",
+                    "W......W",
+                    "W..S...W",
+                    "WWWWWWWW"
+                ],
+                startDir: 'up',
+                hint: ""
+            },
+            {
+                name: "The 'H'",
+                grid: [
+                    "WWWWWWWWWW",
+                    "WT..WW..TW",
+                    "W...WW...W",
+                    "W...WW...W",
+                    "W...S....W",
+                    "W...WW...W",
+                    "W...WW...W",
+                    "WT..WW..TW",
+                    "WWWWWWWWWW"
+                ],
+                startDir: 'right',
+                hint: ""
+            },
+            {
+                name: "Long Road Home",
+                grid: [
+                    "WWWWWWWWWWWW",
+                    "W........T.W",
+                    "WWWWWWWWWW.W",
+                    "W..........W",
+                    "W.WWWWWWWWWW",
+                    "W.S........W",
+                    "WWWWWWWWWWWW"
+                ],
+                startDir: 'right',
+                hint: ""
+            },
+            {
+                name: "The Grid",
+                grid: [
+                    "WWWWWWWW",
+                    "WT.T.T.W",
+                    "W......W",
+                    "W.T.T.TW",
+                    "W......W",
+                    "WS.T.T.W",
+                    "WWWWWWWW"
+                ],
+                startDir: 'right',
+                hint: ""
+            }
+        ];
+
+        class HerbertApp {
+            constructor() {
+                this.levelIndex = 0;
+                this.gridSize = 35; // Slightly smaller for complex maps
+                this.robot = { x: 0, y: 0, dir: 0 }; 
+                this.stepDelay = 200;
+                this.intervalId = null;
+                this.stepCounter = 0;
+                this.totalTargets = 0;
+                this.collectedTargets = 0;
+                
+                this.initUI();
+                this.selectLevel(0);
+                this.updateCharCount();
+            }
+
+            initUI() {
+                const select = document.getElementById('level-select');
+                LEVELS.forEach((lvl, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx;
+                    opt.innerText = `${idx+1}: ${lvl.name}`;
+                    select.appendChild(opt);
+                });
+            }
+
+            updateCharCount() {
+                const text = document.getElementById('code-input').value;
+                document.getElementById('char-count').innerText = text.length;
+            }
+
+            selectLevel(index) {
+                this.stop(); 
+                document.getElementById('victory-modal').classList.add('hidden');
+                this.levelIndex = parseInt(index);
+                this.resetLevelState();
+            }
+
+            nextLevelModal() {
+                document.getElementById('victory-modal').classList.add('hidden');
+                const nextIdx = (this.levelIndex + 1) % LEVELS.length;
+                document.getElementById('level-select').value = nextIdx;
+                this.selectLevel(nextIdx);
+            }
+
+            resetLevel() {
+                this.stop();
+                document.getElementById('victory-modal').classList.add('hidden');
+                this.resetLevelState();
+                this.log("Level reset.");
+            }
+
+            resetLevelState() {
+                const level = LEVELS[this.levelIndex];
+                
+                // Keep code if it exists, otherwise set hint
+                if (!document.getElementById('code-input').value && level.hint) {
+                     document.getElementById('code-input').value = level.hint;
+                }
+                
+                this.renderGrid(level);
+                this.resetRobot(level);
+                
+                this.stepCounter = 0;
+                document.getElementById('step-count').innerText = "0";
+                
+                // Count Targets
+                this.totalTargets = 0;
+                for(let row of level.grid) {
+                    for(let char of row) {
+                        if(char === 'T') this.totalTargets++;
+                    }
+                }
+                this.collectedTargets = 0;
+                this.updateTargetStatus();
+                this.updateCharCount();
+                
+                this.log(`Loaded ${level.name}`);
+            }
+
+            setSpeed(val) {
+                this.stepDelay = 510 - val; 
+            }
+
+            resetRobot(level) {
+                for(let y=0; y<level.grid.length; y++) {
+                    for(let x=0; x<level.grid[y].length; x++) {
+                        if (level.grid[y][x] === 'S') {
+                            this.robot.x = x;
+                            this.robot.y = y;
+                        }
+                    }
+                }
+                const dirMap = { 'right': 0, 'down': 1, 'left': 2, 'up': 3 };
+                this.robot.dir = dirMap[level.startDir] || 0;
+                this.updateRobotUI();
+                
+                document.querySelectorAll('.tile').forEach(t => {
+                    t.classList.remove('visited');
+                    t.classList.remove('collected');
+                });
+                this.markVisited();
+                this.setStatus("IDLE", "text-slate-400");
+            }
+
+            setStatus(text, colorClass) {
+                const el = document.getElementById('game-status');
+                el.innerText = text;
+                el.className = `font-bold ${colorClass}`;
+            }
+            
+            updateTargetStatus() {
+                const el = document.getElementById('debug-targets');
+                el.innerText = `${this.collectedTargets}/${this.totalTargets}`;
+                if (this.collectedTargets === this.totalTargets && this.totalTargets > 0) {
+                    el.className = "font-mono text-green-400 font-bold glow";
+                } else {
+                    el.className = "font-mono text-slate-300";
+                }
+            }
+
+            renderGrid(level) {
+                const container = document.getElementById('game-grid');
+                container.innerHTML = '';
+                const h = level.grid.length;
+                const w = level.grid[0].length;
+                
+                container.style.width = (w * this.gridSize) + 'px';
+                container.style.height = (h * this.gridSize) + 'px';
+
+                for(let y=0; y<h; y++) {
+                    for(let x=0; x<w; x++) {
+                        const cell = level.grid[y][x];
+                        const div = document.createElement('div');
+                        div.className = `tile absolute top-0 left-0`;
+                        div.style.width = this.gridSize + 'px';
+                        div.style.height = this.gridSize + 'px';
+                        div.style.transform = `translate(${x*this.gridSize}px, ${y*this.gridSize}px)`;
+                        div.id = `cell-${x}-${y}`;
+
+                        if (cell === 'W') div.classList.add('wall');
+                        if (cell === 'T') div.classList.add('target');
+                        
+                        container.appendChild(div);
+                    }
+                }
+
+                const bot = document.createElement('div');
+                bot.id = 'robot';
+                bot.className = 'robot text-blue-400';
+                bot.style.width = this.gridSize + 'px';
+                bot.style.height = this.gridSize + 'px';
+                bot.innerHTML = '<svg fill="currentColor" viewBox="0 0 24 24" class="w-3/4 h-3/4"><path d="M12 2L2 22h20L12 2zm0 3.5L18.5 20H5.5L12 5.5z"/></svg>'; 
+                container.appendChild(bot);
+            }
+
+            updateRobotUI() {
+                const bot = document.getElementById('robot');
+                const rotation = (this.robot.dir * 90) + 90;
+                bot.style.transform = `translate(${this.robot.x * this.gridSize}px, ${this.robot.y * this.gridSize}px) rotate(${rotation}deg)`;
+                
+                document.getElementById('debug-pos').innerText = `${this.robot.x},${this.robot.y}`;
+            }
+
+            markVisited() {
+                const cell = document.getElementById(`cell-${this.robot.x}-${this.robot.y}`);
+                if (cell) {
+                    cell.classList.add('visited');
+                    if (cell.classList.contains('target') && !cell.classList.contains('collected')) {
+                        cell.classList.add('collected');
+                        this.collectedTargets++;
+                        this.updateTargetStatus();
+
+                        // Check for win immediately (supports infinite loops)
+                        if (this.collectedTargets === this.totalTargets) {
+                            this.checkWin();
+                        }
+                    }
+                }
+            }
+
+            log(msg, type='info') {
+                const consoleEl = document.getElementById('console-output');
+                const line = document.createElement('div');
+                line.className = type === 'error' ? 'text-red-400' : (type === 'warn' ? 'text-yellow-400' : 'text-slate-400');
+                line.innerText = `> ${msg}`;
+                consoleEl.prepend(line);
+            }
+
+            runCode() {
+                if (this.intervalId) return; 
+
+                this.resetRobot(LEVELS[this.levelIndex]);
+                this.collectedTargets = 0;
+                this.updateTargetStatus();
+                this.stepCounter = 0;
+                document.getElementById('step-count').innerText = "0";
+
+                const code = document.getElementById('code-input').value;
+                try {
+                    const parser = new Parser(code);
+                    const ast = parser.parse();
+                    this.log("Parsing successful. Running...");
+                    
+                    const interpreter = new Interpreter(ast);
+                    const gen = interpreter.createCommandGenerator();
+
+                    this.setStatus("RUNNING", "text-yellow-400");
+                    document.getElementById('stop-btn').classList.remove('hidden');
+                    document.getElementById('run-btn').classList.add('hidden');
+
+                    this.executeGenerator(gen);
+                } catch (e) {
+                    this.log(e.message, 'error');
+                    this.setStatus("ERROR", "text-red-500");
+                }
+            }
+
+            stop() {
+                if (this.intervalId) {
+                    clearTimeout(this.intervalId);
+                    this.intervalId = null;
+                }
+                document.getElementById('stop-btn').classList.add('hidden');
+                document.getElementById('run-btn').classList.remove('hidden');
+                const status = document.getElementById('game-status').innerText;
+                if (status === "RUNNING") {
+                    this.setStatus("STOPPED", "text-slate-400");
+                }
+            }
+
+            executeGenerator(gen) {
+                const step = () => {
+                    if (!document.getElementById('stop-btn').classList.contains('hidden') === false) {
+                        return;
+                    }
+
+                    const result = gen.next();
+
+                    if (result.done) {
+                        this.log("Program finished.");
+                        this.stop();
+                        this.checkWin();
+                        return;
+                    }
+
+                    const cmd = result.value;
+                    this.performCommand(cmd);
+                    
+                    this.stepCounter++;
+                    document.getElementById('step-count').innerText = this.stepCounter;
+
+                    this.intervalId = setTimeout(step, this.stepDelay);
+                };
+
+                step();
+            }
+
+            performCommand(c) {
+                if (c === 'l') {
+                    this.robot.dir = (this.robot.dir + 3) % 4; 
+                } else if (c === 'r') {
+                    this.robot.dir = (this.robot.dir + 1) % 4; 
+                } else if (c === 's') {
+                    let nx = this.robot.x;
+                    let ny = this.robot.y;
+                    if (this.robot.dir === 0) nx++;
+                    if (this.robot.dir === 1) ny++;
+                    if (this.robot.dir === 2) nx--;
+                    if (this.robot.dir === 3) ny--;
+
+                    const level = LEVELS[this.levelIndex];
+                    let blocked = false;
+
+                    if (ny < 0 || ny >= level.grid.length || nx < 0 || nx >= level.grid[0].length) {
+                        blocked = true;
+                    } 
+                    else if (level.grid[ny][nx] === 'W') {
+                        blocked = true;
+                    }
+
+                    if (!blocked) {
+                        this.robot.x = nx;
+                        this.robot.y = ny;
+                        this.markVisited();
+                    } else {
+                        this.log("Bumped into wall.");
+                        const bot = document.getElementById('robot');
+                        bot.classList.add('wall-hit');
+                        setTimeout(() => bot.classList.remove('wall-hit'), 200);
+                    }
+                }
+                this.updateRobotUI();
+            }
+
+            checkWin() {
+                if (this.collectedTargets === this.totalTargets && this.totalTargets > 0) {
+                    this.stop();
+                    this.log("All targets collected!", "success");
+                    this.setStatus("SOLVED", "text-green-500");
+                    
+                    // Show Victory Modal
+                    document.getElementById('vic-steps').innerText = this.stepCounter;
+                    document.getElementById('vic-chars').innerText = document.getElementById('char-count').innerText;
+                    document.getElementById('victory-modal').classList.remove('hidden');
+                }
+            }
+        }
+
+        const herbertApp = new HerbertApp();
+        window.herbertApp = herbertApp;
+
+    </script>
+</body>
+</html>
