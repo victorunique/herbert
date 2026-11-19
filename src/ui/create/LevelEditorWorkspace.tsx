@@ -20,7 +20,7 @@ export interface LevelEditorWorkspaceProps {
 export type BrushTool = '.' | '*' | 'w' | 'g' | 'u' | 'r' | 'd' | 'l';
 export type SymmetryMode = 'none' | 'horizontal' | 'vertical' | 'four_way';
 
-const ODD_DIMENSIONS: readonly number[] = Array.from({ length: 26 }, (_, i) => 25 + i * 2);
+const GRID_DIMENSIONS: readonly number[] = Array.from({ length: 16 }, (_, i) => 25 + i);
 
 const BRUSH_OPTIONS: readonly { readonly tool: BrushTool; readonly label: string }[] = [
   { tool: '*', label: 'Wall (*)' },
@@ -111,7 +111,7 @@ function DimensionSelect(props: {
         onChange={(e) => props.onChange(Number(e.target.value))}
         className="px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 font-mono"
       >
-        {ODD_DIMENSIONS.map((d) => (
+        {GRID_DIMENSIONS.map((d) => (
           <option key={d} value={d}>{d} {props.unit}</option>
         ))}
       </select>
@@ -152,8 +152,8 @@ function EditorMetadataBar(props: {
         <span className="font-semibold text-slate-600 dark:text-slate-400">Level Name</span>
         <input type="text" data-testid="editor-name-input" value={draft.name} onChange={(e) => props.onChangeDraft({ ...draft, name: e.target.value })} className={inputCls} />
       </label>
-      <DimensionSelect label="Width (Odd 25-75)" testId="editor-width-select" value={draft.width} unit="cols" onChange={(w) => props.onChangeDraft(resizeLevelDraft(draft, w, draft.height))} />
-      <DimensionSelect label="Height (Odd 25-75)" testId="editor-height-select" value={draft.height} unit="rows" onChange={(h) => props.onChangeDraft(resizeLevelDraft(draft, draft.width, h))} />
+      <DimensionSelect label="Width (25-40)" testId="editor-width-select" value={draft.width} unit="cols" onChange={(w) => props.onChangeDraft(resizeLevelDraft(draft, w, draft.height))} />
+      <DimensionSelect label="Height (25-40)" testId="editor-height-select" value={draft.height} unit="rows" onChange={(h) => props.onChangeDraft(resizeLevelDraft(draft, draft.width, h))} />
       <label className="flex flex-col gap-1">
         <span className="font-semibold text-slate-600 dark:text-slate-400">Max Bytes</span>
         <input type="number" min={1} max={999} data-testid="editor-max-bytes-input" value={draft.maxBytes} onChange={(e) => props.onChangeDraft({ ...draft, maxBytes: Math.max(1, Number(e.target.value) || 1) })} className={`${inputCls} font-mono`} />
@@ -272,7 +272,7 @@ export function LevelEditorWorkspace(props: LevelEditorWorkspaceProps): ReactEle
   const [draft, setDraft] = useState<LevelDefinition>(() => createBlankLevel({ id: `custom-${Date.now()}`, name: 'Custom Puzzle' }));
   const [brush, setBrush] = useState<BrushTool>('w');
   const [symmetry, setSymmetry] = useState<SymmetryMode>('none');
-  const [statusMsg, setStatusMsg] = useState<string>('Select a brush and paint on the odd WxH grid (25 to 75).');
+  const [statusMsg, setStatusMsg] = useState<string>('Select a brush and paint on the WxH grid (25 to 40).');
   const paintAt = (r: number, c: number): void => setDraft((prev) => paintLevelGrid(prev, r, c, brush, symmetry));
 
   return (

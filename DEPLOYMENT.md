@@ -109,7 +109,7 @@ npm run test:mutate
 npm run build && npm run test:e2e
 ```
 
-> **提示**：`npm run test:e2e` 会自动在后台启动 `http://127.0.0.1:4173` 预览服务，并依次在 **Desktop ($1440 \times 900$)**、**Tablet ($768 \times 1024$)** 和 **Mobile ($390 \times 844$)** 三种视口下调用 Chrome 模拟真实用户点击、切换主题、输入 H 代码、单步调试、完成教程、修改奇数长宽地图（如 $29 \times 25$）及批量上传 `.txt` 关卡文件。
+> **提示**：`npm run test:e2e` 会自动在后台启动 `http://127.0.0.1:4173` 预览服务，并依次在 **Desktop ($1440 \times 900$)**、**Tablet ($768 \times 1024$)** 和 **Mobile ($390 \times 844$)** 三种视口下调用 Chrome 模拟真实用户点击、切换主题、输入 H 代码、单步调试、完成教程、修改自定义长宽地图（如 $30 \times 26$）及批量上传 `.txt` 关卡文件。
 
 ---
 
@@ -218,5 +218,5 @@ npx wrangler pages deploy dist --project-name xherbert --branch main
 1. **HTTPS 与首屏加载**：确认地址栏锁标正常，页面秒开无报错。
 2. **Light / Dark 主题切换**：点击右上角太阳/月亮图标，刷新页面验证主题状态是否持久化在本地浏览器。
 3. **Play 模式闯关与调试**：输入 `a:sa` 换行 `a`，点击 `Instant` 或单步 `Step Forward`，验证实时字节数（`4 / 6 Bytes`）、调用栈显示及过关弹窗。
-4. **Learn 模式教程**：切换到 `Learn` 标签页，验证 5 步快速教程与右侧 `Reference` 语法速查抽屉。
+4. **Learn 模式教程与速查表**：切换到 `Learn` 标签页，验证 5 步快速教程以及左侧边栏内的 `Cheat Sheet (Syntax & Bytes)` 语法速查页。
 5. **Create 模式与 `.txt` 批量上传**：切换到 `Create` 标签页，尝试修改长宽（如 `35 cols x 25 rows`）、绘制按钮、导出 `.txt` 文件以及批量拖拽上传 `.txt` 关卡文件。

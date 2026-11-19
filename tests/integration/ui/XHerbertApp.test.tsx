@@ -7,27 +7,31 @@ describe('XHerbert Full UI Integration Tests (Play, Learn, Create & Theme)', () 
     window.localStorage.clear();
   });
 
-  it('toggles Light/Dark theme and opens the H Language Reference drawer', () => {
+  it('toggles Light/Dark theme without a top-right Reference button and shows no syntax error when editor is initially empty', () => {
     render(<App />);
     const themeBtn = screen.getByTestId('theme-toggle');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(screen.queryByTestId('reference-btn')).toBeNull();
+    expect(screen.queryByTestId('compile-diagnostics')).toBeNull();
 
     fireEvent.click(themeBtn);
     expect(document.documentElement.classList.contains('dark')).toBe(false);
-
-    fireEvent.click(screen.getByTestId('reference-btn'));
-    expect(screen.getByTestId('reference-drawer')).toBeInTheDocument();
   });
 
   it('supports hybrid code input, live byte counting, step forward/backward debugging, and solving a level', () => {
     render(<App />);
     const editor = screen.getByTestId('code-editor') as HTMLTextAreaElement;
 
-    // Tap quick symbol buttons 's', 's'
+    // Tap quick symbol buttons 's', 's', 'c', 'Z' and verify a/A toggle is removed
+    expect(screen.queryByTestId('quick-key-case')).toBeNull();
     fireEvent.click(screen.getByTestId('quick-key-s'));
     fireEvent.click(screen.getByTestId('quick-key-s'));
     expect(editor.value).toBe('ss');
     expect(screen.getByTestId('byte-counter')).toHaveTextContent('2 / 6 Bytes');
+
+    fireEvent.click(screen.getByTestId('quick-key-c'));
+    fireEvent.click(screen.getByTestId('quick-key-Z'));
+    expect(editor.value).toBe('sscZ');
 
     // Enter recursive code a(X):sa(X-1)\na(4)
     fireEvent.change(editor, { target: { value: 'a(X):sa(X-1)\na(4)' } });
@@ -59,30 +63,35 @@ describe('XHerbert Full UI Integration Tests (Play, Learn, Create & Theme)', () 
     expect(screen.getByTestId('grid-dimensions-badge')).toHaveTextContent('35x25');
   });
 
-  it('navigates to Learn mode, loads sample solution, and completes a tutorial lesson', () => {
+  it('navigates to Learn mode, views the Cheat Sheet tab, loads sample solution, and completes a tutorial lesson', () => {
     render(<App />);
     fireEvent.click(screen.getByTestId('nav-learn'));
     expect(screen.getByTestId('tutorial-workspace')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByTestId('tutorial-cheatsheet-tab'));
+    expect(screen.getByTestId('learn-cheatsheet-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('learn-cheatsheet-panel')).toHaveTextContent('Official Byte Counting Rules');
+
+    fireEvent.click(screen.getByTestId('tutorial-tab-1'));
     fireEvent.click(screen.getByTestId('tutorial-use-solution'));
     fireEvent.click(screen.getByTestId('tutorial-run-verify'));
     expect(screen.getByTestId('tutorial-lesson-status')).toHaveTextContent(/Completed/i);
   });
 
-  it('navigates to Create mode, resizes grid to odd rectangular 31x27, saves custom level, and batch-imports .txt files', () => {
+  it('navigates to Create mode, resizes grid to even rectangular 30x26, saves custom level, and batch-imports .txt files', () => {
     render(<App />);
     fireEvent.click(screen.getByTestId('nav-create'));
     expect(screen.getByTestId('editor-workspace')).toBeInTheDocument();
 
     const widthSelect = screen.getByTestId('editor-width-select') as HTMLSelectElement;
     const heightSelect = screen.getByTestId('editor-height-select') as HTMLSelectElement;
-    fireEvent.change(widthSelect, { target: { value: '31' } });
-    fireEvent.change(heightSelect, { target: { value: '27' } });
-    expect(screen.getByTestId('editor-dim-indicator')).toHaveTextContent('31 x 27');
+    fireEvent.change(widthSelect, { target: { value: '30' } });
+    fireEvent.change(heightSelect, { target: { value: '26' } });
+    expect(screen.getByTestId('editor-dim-indicator')).toHaveTextContent('30 x 26');
 
     const nameInput = screen.getByTestId('editor-name-input') as HTMLInputElement;
-    fireEvent.change(nameInput, { target: { value: 'My Odd Arena' } });
+    fireEvent.change(nameInput, { target: { value: 'My Even Arena' } });
     fireEvent.click(screen.getByTestId('editor-save-btn'));
-    expect(screen.getByTestId('custom-levels-list')).toHaveTextContent('My Odd Arena');
+    expect(screen.getByTestId('custom-levels-list')).toHaveTextContent('My Even Arena');
   });
 });

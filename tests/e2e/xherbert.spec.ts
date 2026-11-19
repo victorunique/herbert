@@ -12,23 +12,19 @@ function makeValidTxtGrid(width: number, height: number): string {
 }
 
 test.describe('XHerbert Multi-Viewport End-to-End Browser Suite', () => {
-  test('Play Mode: theme toggle, reference drawer, quick-symbol bar, step debugger, call stack, and solving a level', async ({
+  test('Play Mode: theme toggle, quick-symbol bar, step debugger, call stack, and solving a level', async ({
     page,
   }) => {
     await page.goto('/');
 
-    // Theme toggle (dark -> light -> dark)
+    // Theme toggle (dark -> light -> dark), ensure no top-right Reference button and no empty-code error on initial load
     await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(page.getByTestId('reference-btn')).toHaveCount(0);
+    await expect(page.getByTestId('compile-diagnostics')).toHaveCount(0);
     await page.getByTestId('theme-toggle').click();
     await expect(page.locator('html')).not.toHaveClass(/dark/);
     await page.getByTestId('theme-toggle').click();
     await expect(page.locator('html')).toHaveClass(/dark/);
-
-    // Reference cheat sheet drawer
-    await page.getByTestId('reference-btn').click();
-    await expect(page.getByTestId('reference-drawer')).toBeVisible();
-    await page.getByTestId('close-reference-btn').click();
-    await expect(page.getByTestId('reference-drawer')).toBeHidden();
 
     // Tap quick symbol keys
     await page.getByTestId('quick-key-s').click();
@@ -61,45 +57,50 @@ test.describe('XHerbert Multi-Viewport End-to-End Browser Suite', () => {
     await expect(page.getByTestId('current-level-title')).toContainText('4-2: Grand Boulevard (35x25)');
   });
 
-  test('Learn Mode: interactive 5-stage tutorial execution and completion', async ({ page }) => {
+  test('Learn Mode: Cheat Sheet tab & interactive 5-stage tutorial execution and completion', async ({ page }) => {
     await page.goto('/');
     await page.getByTestId('nav-learn').click();
     await expect(page.getByTestId('tutorial-workspace')).toBeVisible();
 
+    await page.getByTestId('tutorial-cheatsheet-tab').click();
+    await expect(page.getByTestId('learn-cheatsheet-panel')).toBeVisible();
+    await expect(page.getByTestId('learn-cheatsheet-panel')).toContainText('Official Byte Counting Rules');
+
+    await page.getByTestId('tutorial-tab-1').click();
     await page.getByTestId('tutorial-use-solution').click();
     await page.getByTestId('tutorial-run-verify').click();
     await expect(page.getByTestId('tutorial-lesson-status')).toHaveText('Completed');
   });
 
-  test('Create Mode: resize to odd rectangular 29x25, paint, save, test in simulator, and batch-upload .txt files', async ({
+  test('Create Mode: resize to even rectangular 30x26, paint, save, test in simulator, and batch-upload .txt files', async ({
     page,
   }) => {
     await page.goto('/');
     await page.getByTestId('nav-create').click();
     await expect(page.getByTestId('editor-workspace')).toBeVisible();
 
-    // Change width to 29 and height to 25 (non-square odd dimensions)
-    await page.getByTestId('editor-width-select').selectOption('29');
-    await page.getByTestId('editor-height-select').selectOption('25');
-    await expect(page.getByTestId('editor-dim-indicator')).toHaveText('29 x 25');
+    // Change width to 30 and height to 26 (any integer in [25, 40])
+    await page.getByTestId('editor-width-select').selectOption('30');
+    await page.getByTestId('editor-height-select').selectOption('26');
+    await expect(page.getByTestId('editor-dim-indicator')).toHaveText('30 x 26');
 
     // Paint a white button on cell (8, 12) and name the level
     await page.getByTestId('brush-w').click();
     await page.getByTestId('grid-cell-8-12').click();
-    await page.getByTestId('editor-name-input').fill('E2E Odd Rectangular Map');
+    await page.getByTestId('editor-name-input').fill('E2E Even Rectangular Map');
     await page.getByTestId('editor-save-btn').click();
-    await expect(page.getByTestId('custom-levels-list')).toContainText('E2E Odd Rectangular Map');
+    await expect(page.getByTestId('custom-levels-list')).toContainText('E2E Even Rectangular Map');
 
-    // Batch upload one valid 27x25 .txt file and one invalid even 26x25 .txt file
-    const validTxt = makeValidTxtGrid(27, 25);
-    const invalidEvenTxt = makeValidTxtGrid(26, 25);
+    // Batch upload one valid 26x25 .txt file and one invalid out-of-range 42x25 .txt file
+    const validTxt = makeValidTxtGrid(26, 25);
+    const invalidLargeTxt = makeValidTxtGrid(42, 25);
     const fileInput = page.getByTestId('batch-upload-input');
     await fileInput.setInputFiles([
-      { name: 'valid_27x25.txt', mimeType: 'text/plain', buffer: Buffer.from(validTxt, 'utf-8') },
+      { name: 'valid_26x25.txt', mimeType: 'text/plain', buffer: Buffer.from(validTxt, 'utf-8') },
       {
-        name: 'invalid_even_26x25.txt',
+        name: 'invalid_large_42x25.txt',
         mimeType: 'text/plain',
-        buffer: Buffer.from(invalidEvenTxt, 'utf-8'),
+        buffer: Buffer.from(invalidLargeTxt, 'utf-8'),
       },
     ]);
 

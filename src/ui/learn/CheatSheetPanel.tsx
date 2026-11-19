@@ -1,10 +1,4 @@
 import type { ReactElement } from 'react';
-import { X } from 'lucide-react';
-
-export interface ReferenceDrawerProps {
-  readonly isOpen: boolean;
-  readonly onClose: () => void;
-}
 
 interface RefCardData {
   readonly title: string;
@@ -21,8 +15,9 @@ const REFERENCE_SECTIONS: readonly RefCardData[] = [
     ],
   },
   {
-    title: '2. Map Elements & Instant Victory',
+    title: '2. Map Elements, Grid Size & Instant Victory',
     lines: [
+      'Grid Size: Standard maps are 25x25. Custom maps support any integer width and height from 25 to 40 (square or rectangular).',
       'White Buttons (w): Press all of them to win! The level completes the instant the last white button lights up.',
       'Gray Buttons (g): Reset traps! Stepping on a gray button resets ALL lit white buttons back to unlit.',
     ],
@@ -52,39 +47,37 @@ const REFERENCE_SECTIONS: readonly RefCardData[] = [
 
 function ReferenceCard(props: { readonly section: RefCardData }): ReactElement {
   return (
-    <section className="space-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+    <section className="space-y-2 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
       <h3 className="text-sm font-bold text-blue-600 dark:text-sky-400">{props.section.title}</h3>
-      <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 leading-relaxed">
+      <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 space-y-1.5 leading-relaxed">
         {props.section.lines.map((line) => (
           <p key={line}>{line}</p>
         ))}
         {props.section.codeSample && (
-          <pre className="p-2 rounded bg-slate-900 text-slate-100 font-mono text-xs">{props.section.codeSample}</pre>
+          <pre className="p-2.5 rounded-lg bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto">
+            {props.section.codeSample}
+          </pre>
         )}
       </div>
     </section>
   );
 }
 
-export function ReferenceDrawer(props: ReferenceDrawerProps): ReactElement | null {
-  if (!props.isOpen) return null;
+export function CheatSheetPanel(): ReactElement {
   return (
-    <div data-testid="reference-drawer" className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex justify-end">
-      <div className="w-full max-w-xl bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 h-full flex flex-col shadow-2xl">
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">H Language Official Reference &amp; Cheat Sheet</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Complete syntax, grid physics, and official byte-counting rules.</p>
-          </div>
-          <button type="button" data-testid="close-reference-btn" onClick={props.onClose} className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-5 overflow-y-auto space-y-4">
-          {REFERENCE_SECTIONS.map((sec) => (
-            <ReferenceCard key={sec.title} section={sec} />
-          ))}
-        </div>
+    <div data-testid="learn-cheatsheet-panel" className="flex-1 space-y-4 max-w-4xl">
+      <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white">
+          H Language Official Reference &amp; Cheat Sheet
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Complete syntax, grid physics, and official byte-counting rules in one place.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {REFERENCE_SECTIONS.map((sec) => (
+          <ReferenceCard key={sec.title} section={sec} />
+        ))}
       </div>
     </div>
   );

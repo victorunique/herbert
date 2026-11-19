@@ -19,7 +19,6 @@ import {
 import { HeaderNav, type AppMode } from './ui/common/HeaderNav';
 import { LevelEditorWorkspace } from './ui/create/LevelEditorWorkspace';
 import { ComponentHarness } from './ui/harness/ComponentHarness';
-import { ReferenceDrawer } from './ui/learn/ReferenceDrawer';
 import { TutorialWorkspace } from './ui/learn/TutorialWorkspace';
 import { LevelSelectorModal } from './ui/play/LevelSelectorModal';
 import { PlayWorkspace } from './ui/play/PlayWorkspace';
@@ -106,17 +105,15 @@ export function App(): ReactElement {
   const [theme, toggleTheme] = useThemeSync();
   const ws = useAppWorkspaceState();
   const [isLevelModalOpen, setIsLevelModalOpen] = useState<boolean>(false);
-  const [isRefOpen, setIsRefOpen] = useState<boolean>(false);
   const [tutorialDoneIds, setTutorialDoneIds] = useState<string[]>(() => loadTutorialCompletedIds());
   const harness = getHarnessParam();
   if (harness) return <ComponentHarness target={harness} />;
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      <HeaderNav mode={ws.mode} onSelectMode={ws.setMode} currentLevelName={ws.currentLevel.name} currentLevelDims={`${ws.currentLevel.width}x${ws.currentLevel.height}`} onOpenLevelModal={() => setIsLevelModalOpen(true)} onOpenReference={() => setIsRefOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
+      <HeaderNav mode={ws.mode} onSelectMode={ws.setMode} currentLevelName={ws.currentLevel.name} currentLevelDims={`${ws.currentLevel.width}x${ws.currentLevel.height}`} onOpenLevelModal={() => setIsLevelModalOpen(true)} theme={theme} onToggleTheme={toggleTheme} />
       <ActiveWorkspaceBody ws={ws} tutorialDoneIds={tutorialDoneIds} onMarkTutorialDone={(id) => setTutorialDoneIds(markTutorialLessonCompleted(id))} />
       <LevelSelectorModal isOpen={isLevelModalOpen} onClose={() => setIsLevelModalOpen(false)} campaignLevels={CAMPAIGN_LEVELS} customLevels={ws.customLevels} currentLevelId={ws.currentLevel.id} progressMap={ws.progressMap} onSelectLevel={ws.selectLevel} />
-      <ReferenceDrawer isOpen={isRefOpen} onClose={() => setIsRefOpen(false)} />
     </div>
   );
 }

@@ -1,34 +1,44 @@
 import { useState, type ReactElement } from 'react';
-import { CheckCircle2, Play, Sparkles } from 'lucide-react';
+import { BookText, CheckCircle2, Play, Sparkles } from 'lucide-react';
 import { TUTORIAL_LESSONS, type TutorialLesson } from '../../content/tutorialLessons';
 import { createInitialSnapshot, createSimulationSession } from '../../core/gridEngine';
 import { tokenize } from '../../core/lexer';
 import type { SimulationSnapshot } from '../../core/types';
 import { GridCanvas } from '../common/GridCanvas';
+import { CheatSheetPanel } from './CheatSheetPanel';
 
 export interface TutorialWorkspaceProps {
   readonly completedIds: readonly string[];
   readonly onMarkCompleted: (lessonId: string) => void;
 }
 
+type LearnViewSelection = 'cheatsheet' | string;
+
 function LessonSidebar(props: {
   readonly lessons: readonly TutorialLesson[];
-  readonly activeId: string;
+  readonly activeSelection: LearnViewSelection;
   readonly completedIds: readonly string[];
-  readonly onSelect: (lesson: TutorialLesson) => void;
+  readonly onSelectLesson: (lesson: TutorialLesson) => void;
+  readonly onSelectCheatSheet: () => void;
 }): ReactElement {
+  const cheatCls = props.activeSelection === 'cheatsheet' ? 'border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-semibold' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60';
   return (
     <aside className="w-full lg:w-72 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 space-y-2 shrink-0">
       <div className="px-2 py-1"><h2 className="text-sm font-bold text-slate-900 dark:text-white">5-Minute Quick-Start Tutorial</h2><p className="text-xs text-slate-500 dark:text-slate-400">Completed {props.completedIds.length} / {props.lessons.length}</p></div>
       {props.lessons.map((lesson) => {
-        const cls = lesson.id === props.activeId ? 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-sky-300 font-semibold' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60';
+        const cls = lesson.id === props.activeSelection ? 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-sky-300 font-semibold' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60';
         return (
-          <button key={lesson.id} type="button" data-testid={`tutorial-tab-${lesson.stepNumber}`} onClick={() => props.onSelect(lesson)} className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all flex items-center justify-between gap-2 ${cls}`}>
+          <button key={lesson.id} type="button" data-testid={`tutorial-tab-${lesson.stepNumber}`} onClick={() => props.onSelectLesson(lesson)} className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all flex items-center justify-between gap-2 ${cls}`}>
             <span className="truncate">{lesson.title}</span>
             {props.completedIds.includes(lesson.id) && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
           </button>
         );
       })}
+      <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button type="button" data-testid="tutorial-cheatsheet-tab" onClick={props.onSelectCheatSheet} className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all flex items-center gap-2 ${cheatCls}`}>
+          <BookText className="w-4 h-4 shrink-0" /><span>Cheat Sheet (Syntax &amp; Bytes)</span>
+        </button>
+      </div>
     </aside>
   );
 }
@@ -102,6 +112,7 @@ function verifyTutorialAttempt(
 
 export function TutorialWorkspace(props: TutorialWorkspaceProps): ReactElement {
   const [activeLesson, setActiveLesson] = useState<TutorialLesson>(() => TUTORIAL_LESSONS[0]!);
+  const [viewSelection, setViewSelection] = useState<LearnViewSelection>(() => TUTORIAL_LESSONS[0]!.id);
   const [code, setCode] = useState<string>(() => TUTORIAL_LESSONS[0]!.starterCode);
   const [snapshot, setSnapshot] = useState<SimulationSnapshot>(() => createInitialSnapshot(TUTORIAL_LESSONS[0]!.level));
   const [feedback, setFeedback] = useState<string>('Write or load the sample solution and click Run & Verify.');
@@ -109,16 +120,19 @@ export function TutorialWorkspace(props: TutorialWorkspaceProps): ReactElement {
   return (
     <div data-testid="tutorial-workspace" className="flex-1 flex flex-col lg:flex-row gap-4 p-3 sm:p-4 overflow-y-auto">
       <LessonSidebar
-        lessons={TUTORIAL_LESSONS} activeId={activeLesson.id} completedIds={props.completedIds}
-        onSelect={(lesson) => { setActiveLesson(lesson); setCode(lesson.starterCode); setSnapshot(createInitialSnapshot(lesson.level)); setFeedback('Ready to test.'); }}
+        lessons={TUTORIAL_LESSONS} activeSelection={viewSelection} completedIds={props.completedIds}
+        onSelectCheatSheet={() => setViewSelection('cheatsheet')}
+        onSelectLesson={(lesson) => { setActiveLesson(lesson); setViewSelection(lesson.id); setCode(lesson.starterCode); setSnapshot(createInitialSnapshot(lesson.level)); setFeedback('Ready to test.'); }}
       />
-      <div className="flex-1 flex flex-col xl:flex-row gap-4 min-w-0">
-        <div className="flex-1 flex flex-col gap-3">
-          <LessonTheoryCard lesson={activeLesson} isCompleted={props.completedIds.includes(activeLesson.id)} />
-          <GridCanvas level={activeLesson.level} snapshot={snapshot} />
+      {viewSelection === 'cheatsheet' ? <CheatSheetPanel /> : (
+        <div className="flex-1 flex flex-col xl:flex-row gap-4 min-w-0">
+          <div className="flex-1 flex flex-col gap-3">
+            <LessonTheoryCard lesson={activeLesson} isCompleted={props.completedIds.includes(activeLesson.id)} />
+            <GridCanvas level={activeLesson.level} snapshot={snapshot} />
+          </div>
+          <LessonSandboxEditor lesson={activeLesson} code={code} onChangeCode={setCode} onRunVerify={() => verifyTutorialAttempt(activeLesson, code, setSnapshot, setFeedback, props.onMarkCompleted)} feedback={feedback} />
         </div>
-        <LessonSandboxEditor lesson={activeLesson} code={code} onChangeCode={setCode} onRunVerify={() => verifyTutorialAttempt(activeLesson, code, setSnapshot, setFeedback, props.onMarkCompleted)} feedback={feedback} />
-      </div>
+      )}
     </div>
   );
 }

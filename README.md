@@ -279,7 +279,7 @@ b(1)
 
 ## 7. XHerbert 工程架构、构建、测试与部署指南
 
-本项目（**XHerbert**，完整产品需求见 [PRD.md](file:///Users/victorxu/projects/herbert/PRD.md)）基于上述权威规则采用 React 19 + Vite 6 + TypeScript 5 + Tailwind CSS 实现，支持默认 $25 \times 25$ 以及任意宽高为 $[25, 75]$ 区间内奇数的长方形或正方形地图。
+本项目（**XHerbert**，完整产品需求见 [PRD.md](file:///Users/victorxu/projects/herbert/PRD.md)）基于上述权威规则采用 React 19 + Vite 6 + TypeScript 5 + Tailwind CSS 实现，支持默认 $25 \times 25$ 以及任意宽高为 $[25, 40]$ 区间内正整数的长方形或正方形地图。
 
 ### 7.1 架构概览（Architecture Overview）
 
@@ -289,7 +289,7 @@ b(1)
   - [src/core/lexer.ts](file:///Users/victorxu/projects/herbert/src/core/lexer.ts)：H 语言词法分析器与官方 Token 字节数计费引擎（字母与连续整数计 `1 Byte`，标点、运算符、空白计 `0 Byte`）。
   - [src/core/parser.ts](file:///Users/victorxu/projects/herbert/src/core/parser.ts)：递归下降语法分析器与静态语义校验器（校验未定义过程、重名、形参个数 Arity 匹配、未声明形参及算术类型冲突）。
   - [src/core/interpreter.ts](file:///Users/victorxu/projects/herbert/src/core/interpreter.ts)：支持算术表达式传值求值（$[-255, +255]$ 边界检查与任一数值参数 $\le 0$ 隐式截断）及高阶指令序列词法闭包绑定的步进式生成器解释器。
-  - [src/core/levelCodec.ts](file:///Users/victorxu/projects/herbert/src/core/levelCodec.ts)：标准 `.txt` 关卡文件解析器、序列化器、批量导入校验器（强制校验宽 $W$ 与高 $H$ 为 $[25, 75]$ 内的奇数）。
+  - [src/core/levelCodec.ts](file:///Users/victorxu/projects/herbert/src/core/levelCodec.ts)：标准 `.txt` 关卡文件解析器、序列化器、批量导入校验器（强制校验宽 $W$ 与高 $H$ 为 $[25, 40]$ 内的正整数）。
   - [src/core/gridEngine.ts](file:///Users/victorxu/projects/herbert/src/core/gridEngine.ts)：二维网格物理引擎、时间旅行快照会话（支持单步前进/后退/瞬间运行）与比例奖励积分计算器。
 - **内容与持久化层 (`src/content/`, `src/storage/`)**：
   - [src/content/campaignLevels.ts](file:///Users/victorxu/projects/herbert/src/content/campaignLevels.ts)：4 大渐进章节共 9 道内置经典关卡（默认全部开放，包含 $35 \times 25$ 长方形奇数关卡）。

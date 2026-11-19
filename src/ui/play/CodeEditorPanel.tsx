@@ -25,8 +25,10 @@ const QUICK_KEYS: readonly { readonly label: string; readonly insert: string; re
   { label: '+', insert: '+', id: 'plus' },
   { label: 'a', insert: 'a', id: 'a' },
   { label: 'b', insert: 'b', id: 'b' },
+  { label: 'c', insert: 'c', id: 'c' },
   { label: 'X', insert: 'X', id: 'X' },
   { label: 'Y', insert: 'Y', id: 'Y' },
+  { label: 'Z', insert: 'Z', id: 'Z' },
   { label: '1', insert: '1', id: '1' },
   { label: '↵', insert: '\n', id: 'newline' },
 ];
@@ -85,17 +87,7 @@ function TokenCostBreakdownStrip(props: { readonly tokens: readonly Token[]; rea
   );
 }
 
-function resolveInsertedChar(val: string, upperMode: boolean): string {
-  const isConvertibleLower = val.length === 1 && val >= 'a' && val <= 'z' && !['s', 'l', 'r'].includes(val);
-  return isConvertibleLower && upperMode ? val.toUpperCase() : val;
-}
-
 function QuickSymbolBar(props: { readonly code: string; readonly onChangeCode: (next: string) => void }): ReactElement {
-  const [upperMode, setUpperMode] = useState<boolean>(false);
-  const caseCls = upperMode
-    ? 'bg-indigo-600 text-white border-indigo-500'
-    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700';
-
   return (
     <div data-testid="quick-symbol-bar" className="px-2 py-1.5 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1">
       {QUICK_KEYS.map((k) => (
@@ -103,15 +95,12 @@ function QuickSymbolBar(props: { readonly code: string; readonly onChangeCode: (
           key={k.id}
           type="button"
           data-testid={`quick-key-${k.id}`}
-          onClick={() => props.onChangeCode(`${props.code}${resolveInsertedChar(k.insert, upperMode)}`)}
+          onClick={() => props.onChangeCode(`${props.code}${k.insert}`)}
           className="px-2 py-1 min-w-[28px] rounded bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 font-mono text-xs font-semibold shadow-2xs"
         >
           {k.label}
         </button>
       ))}
-      <button type="button" data-testid="quick-key-case" onClick={() => setUpperMode((u) => !u)} className={`px-2 py-1 rounded font-mono text-xs font-semibold border ${caseCls}`}>
-        a/A
-      </button>
       <button type="button" data-testid="quick-key-backspace" onClick={() => props.onChangeCode(props.code.slice(0, -1))} className="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-mono text-xs font-semibold">
         ⌫
       </button>
@@ -119,7 +108,17 @@ function QuickSymbolBar(props: { readonly code: string; readonly onChangeCode: (
   );
 }
 
-function DiagnosticsStatusStrip(props: { readonly diagnostics: readonly Diagnostic[] }): ReactElement {
+function DiagnosticsStatusStrip(props: {
+  readonly diagnostics: readonly Diagnostic[];
+  readonly isEmpty: boolean;
+}): ReactElement {
+  if (props.isEmpty) {
+    return (
+      <div className="px-3 py-1 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+        Ready - enter H code to begin
+      </div>
+    );
+  }
   if (props.diagnostics.length === 0) {
     return (
       <div className="px-3 py-1 bg-emerald-500/5 border-t border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 text-[11px] flex items-center gap-1">
@@ -174,7 +173,7 @@ export function CodeEditorPanel(props: CodeEditorPanelProps): ReactElement {
         />
       </div>
       <HintBar hint={props.hint} />
-      <DiagnosticsStatusStrip diagnostics={props.diagnostics} />
+      <DiagnosticsStatusStrip diagnostics={props.diagnostics} isEmpty={props.code.trim().length === 0} />
       <QuickSymbolBar code={props.code} onChangeCode={props.onChangeCode} />
     </div>
   );

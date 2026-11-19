@@ -26,7 +26,7 @@ export const CAMPAIGN_CHAPTERS: readonly CampaignChapter[] = [
   {
     number: 4,
     title: 'Chapter 4: Imagine Cup Classics & Wide Arenas',
-    subtitle: 'Combine wall alignment, strategic gray resets, and rectangular odd-dimension maps.',
+    subtitle: 'Combine wall alignment, strategic gray resets, and wide rectangular maps.',
   },
 ];
 
@@ -236,7 +236,7 @@ const LEVEL_SPECS: readonly GridBuilderSpec[] = [
     width: 35,
     height: 25,
     description:
-      'A wide 35x25 rectangular odd-dimension arena! Sweep across three 26-step horizontal avenues connected by vertical turns.',
+      'A wide 35x25 rectangular arena! Sweep across three 26-step horizontal avenues connected by vertical turns.',
     hint: 'Use a(X):sa(X-1) with a helper b(X):a(26)Xa(4)X across the 35-column grid.',
     maxBytes: 22,
     basePoints: 450,

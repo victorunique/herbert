@@ -28,12 +28,12 @@ export interface BatchParseResult {
 }
 
 const MIN_DIM = 25;
-const MAX_DIM = 75;
+const MAX_DIM = 40;
 const START_DIRS = new Set<string>(['u', 'r', 'd', 'l']);
 const CELL_CHARS = new Set<string>(['.', '*', 'w', 'g']);
 
 export function isValidGridDimension(value: number): boolean {
-  return Number.isInteger(value) && value >= MIN_DIM && value <= MAX_DIM && value % 2 === 1;
+  return Number.isInteger(value) && value >= MIN_DIM && value <= MAX_DIM;
 }
 
 function parseMetaComment(commentLine: string): { key: string; val: string } {
@@ -101,8 +101,6 @@ function extractLinesAndMetadata(
 function checkAxisDimension(label: string, val: number, errors: string[]): void {
   if (val < MIN_DIM || val > MAX_DIM) {
     errors.push(`Grid ${label} (${val}) must be between ${MIN_DIM} and ${MAX_DIM}`);
-  } else if (val % 2 === 0) {
-    errors.push(`Grid ${label} (${val}) must be an odd integer`);
   }
 }
 

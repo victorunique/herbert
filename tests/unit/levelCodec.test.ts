@@ -21,16 +21,16 @@ function makeGridLines(width: number, height: number, mutator?: (rows: string[][
   return rows.map((r) => r.join('')).join('\n');
 }
 
-describe('Level Codec (.txt Parser, Serializer & Odd WxH Validator)', () => {
-  it('validates odd dimensions in [25, 75]', () => {
+describe('Level Codec (.txt Parser, Serializer & WxH Validator [25..40])', () => {
+  it('validates any integer dimension in [25, 40] (both odd and even)', () => {
     expect(isValidGridDimension(25)).toBe(true);
+    expect(isValidGridDimension(26)).toBe(true);
+    expect(isValidGridDimension(30)).toBe(true);
     expect(isValidGridDimension(35)).toBe(true);
-    expect(isValidGridDimension(75)).toBe(true);
-    expect(isValidGridDimension(23)).toBe(false);
+    expect(isValidGridDimension(40)).toBe(true);
     expect(isValidGridDimension(24)).toBe(false);
-    expect(isValidGridDimension(26)).toBe(false);
-    expect(isValidGridDimension(76)).toBe(false);
-    expect(isValidGridDimension(77)).toBe(false);
+    expect(isValidGridDimension(41)).toBe(false);
+    expect(isValidGridDimension(25.5)).toBe(false);
   });
 
   it('parses a standard 25x25 pure grid .txt file with default metadata and slugified ID', () => {
@@ -50,52 +50,43 @@ describe('Level Codec (.txt Parser, Serializer & Odd WxH Validator)', () => {
     expect(lvl.whiteButtons).toEqual([{ row: 11, col: 12 }]);
   });
 
-  it('parses annotated .txt file with metadata headers, comments without colons, and ignores <=0 numeric headers', () => {
-    const grid35x25 = makeGridLines(35, 25, (rows) => {
+  it('parses annotated .txt file with metadata headers, even rectangular dimensions (30x26), and ignores <=0 numeric headers', () => {
+    const grid30x26 = makeGridLines(30, 26, (rows) => {
       rows[5]![5] = 'g';
     });
-    const annotated = `# comment without colon\n# NAME : Rectangular Challenge\n# MAX_BYTES : 24\n# POINTS : 350\n${grid35x25}`;
+    const annotated = `# comment without colon\n# NAME : Rectangular Challenge\n# MAX_BYTES : 24\n# POINTS : 350\n${grid30x26}`;
     const res = parseLevelText(annotated);
     expect(res.errors).toHaveLength(0);
     expect(res.level?.name).toBe('Rectangular Challenge');
-    expect(res.level?.width).toBe(35);
-    expect(res.level?.height).toBe(25);
+    expect(res.level?.width).toBe(30);
+    expect(res.level?.height).toBe(26);
     expect(res.level?.maxBytes).toBe(24);
     expect(res.level?.basePoints).toBe(350);
     expect(res.level?.grayButtons).toEqual([{ row: 5, col: 5 }]);
 
-    // Zero or negative max_bytes / points should be ignored in favor of defaults
     const zeroMeta = `# max_bytes: 0\n# points: 0\n${makeGridLines(25, 25)}`;
     const resZero = parseLevelText(zeroMeta, { maxBytes: 18, basePoints: 120 });
     expect(resZero.level?.maxBytes).toBe(18);
     expect(resZero.level?.basePoints).toBe(120);
   });
 
-  it('parses maximum 75x75 odd grid', () => {
-    const res = parseLevelText(makeGridLines(75, 75));
+  it('parses maximum 40x40 grid', () => {
+    const res = parseLevelText(makeGridLines(40, 40));
     expect(res.errors).toHaveLength(0);
-    expect(res.level?.width).toBe(75);
-    expect(res.level?.height).toBe(75);
+    expect(res.level?.width).toBe(40);
+    expect(res.level?.height).toBe(40);
   });
 
-  it('rejects even width or even height or out-of-range dimensions (<25 or >75)', () => {
-    const evenW = parseLevelText(makeGridLines(26, 25));
-    expect(evenW.level).toBeNull();
-    expect(evenW.errors).toContain('Grid width (26) must be an odd integer');
-
-    const evenH = parseLevelText(makeGridLines(25, 26));
-    expect(evenH.level).toBeNull();
-    expect(evenH.errors).toContain('Grid height (26) must be an odd integer');
-
-    const tooSmall = parseLevelText(makeGridLines(23, 23));
+  it('rejects out-of-range dimensions (<25 or >40)', () => {
+    const tooSmall = parseLevelText(makeGridLines(24, 24));
     expect(tooSmall.level).toBeNull();
-    expect(tooSmall.errors).toContain('Grid height (23) must be between 25 and 75');
-    expect(tooSmall.errors).toContain('Grid width (23) must be between 25 and 75');
+    expect(tooSmall.errors).toContain('Grid height (24) must be between 25 and 40');
+    expect(tooSmall.errors).toContain('Grid width (24) must be between 25 and 40');
 
-    const tooLarge = parseLevelText(makeGridLines(77, 77));
+    const tooLarge = parseLevelText(makeGridLines(41, 42));
     expect(tooLarge.level).toBeNull();
-    expect(tooLarge.errors).toContain('Grid height (77) must be between 25 and 75');
-    expect(tooLarge.errors).toContain('Grid width (77) must be between 25 and 75');
+    expect(tooLarge.errors).toContain('Grid height (42) must be between 25 and 40');
+    expect(tooLarge.errors).toContain('Grid width (41) must be between 25 and 40');
   });
 
   it('rejects ragged rows, invalid characters, missing/multiple starts, or zero white buttons with exact messages', () => {
@@ -142,16 +133,16 @@ describe('Level Codec (.txt Parser, Serializer & Odd WxH Validator)', () => {
     expect(defaultBlank.grid[5]?.[24]).toBe('*');
     expect(defaultBlank.grid[1]?.[1]).toBe('.');
 
-    // Invalid dimension falls back to 25
-    const fallbackBlank = createBlankLevel({ width: 24, height: 10 });
+    // Invalid dimension (<25 or >40) falls back to 25
+    const fallbackBlank = createBlankLevel({ width: 24, height: 45 });
     expect(fallbackBlank.width).toBe(25);
     expect(fallbackBlank.height).toBe(25);
 
     const customBlank = createBlankLevel({
       id: 'custom-1',
       name: 'Round Trip Map',
-      width: 29,
-      height: 25,
+      width: 30,
+      height: 26,
       maxBytes: 15,
       basePoints: 200,
     });
@@ -159,20 +150,21 @@ describe('Level Codec (.txt Parser, Serializer & Odd WxH Validator)', () => {
     const reparsed = parseLevelText(serialized);
     expect(reparsed.errors).toHaveLength(0);
     expect(reparsed.level?.name).toBe('Round Trip Map');
-    expect(reparsed.level?.width).toBe(29);
-    expect(reparsed.level?.height).toBe(25);
+    expect(reparsed.level?.width).toBe(30);
+    expect(reparsed.level?.height).toBe(26);
   });
 
-  it('batch-parses multiple .txt files and separates valid levels from malformed files', () => {
+  it('batch-parses multiple .txt files and separates valid levels from out-of-range files', () => {
     const batch = parseBatchLevelFiles([
-      { filename: 'good_one.txt', content: makeGridLines(25, 25) },
-      { filename: 'bad_even.txt', content: makeGridLines(24, 25) },
+      { filename: 'good_even.txt', content: makeGridLines(26, 28) },
+      { filename: 'bad_too_large.txt', content: makeGridLines(42, 25) },
       { filename: '.txt', content: makeGridLines(31, 25) },
     ]);
     expect(batch.validLevels).toHaveLength(2);
-    expect(batch.validLevels[0]?.name).toBe('good one');
+    expect(batch.validLevels[0]?.name).toBe('good even');
+    expect(batch.validLevels[0]?.width).toBe(26);
     expect(batch.validLevels[1]?.name).toBe('Imported Level 3');
     expect(batch.failedFiles).toHaveLength(1);
-    expect(batch.failedFiles[0]?.filename).toBe('bad_even.txt');
+    expect(batch.failedFiles[0]?.filename).toBe('bad_too_large.txt');
   });
 });
