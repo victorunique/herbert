@@ -50,11 +50,19 @@ test.describe('XHerbert Multi-Viewport End-to-End Browser Suite', () => {
     await expect(page.getByTestId('solved-banner')).toBeVisible();
     await expect(page.getByTestId('solved-banner')).toContainText('Level Solved in 4 Bytes');
 
-    // Open Level Selector Modal and switch to 35x25 rectangular odd map
+    // Open 50-level Selector Modal, verify 1 / 50 solved progress, filter Chapter 4, and switch to 35x25 map
     await page.getByTestId('level-selector-btn').click();
     await expect(page.getByTestId('level-modal')).toBeVisible();
+    await expect(page.getByTestId('campaign-progress-summary')).toContainText('1 / 50 Solved');
+    await page.getByTestId('chapter-filter-4').click();
     await page.getByTestId('select-level-c4-wide-boulevard-35x25').click();
-    await expect(page.getByTestId('current-level-title')).toContainText('4-2: Grand Boulevard (35x25)');
+    await expect(page.getByTestId('current-level-title')).toContainText('4-4: Grand Boulevard (35x25)');
+
+    // Also verify filtering to Chapter 9 and launching a 40x40 arena
+    await page.getByTestId('level-selector-btn').click();
+    await page.getByTestId('chapter-filter-9').click();
+    await page.getByTestId('select-level-c9-grand-colosseum-40x40').click();
+    await expect(page.getByTestId('current-level-title')).toContainText('9-5: Grand Colosseum (40x40)');
   });
 
   test('Learn Mode: Cheat Sheet tab & interactive 5-stage tutorial execution and completion', async ({ page }) => {

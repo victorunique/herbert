@@ -100,15 +100,21 @@ Built entirely as a zero-backend client-side application, XHerbert brings the au
 
 ---
 
-### 4.2 Campaign Level Browser & Progression
+### 4.2 Campaign Level Browser & Progression (10 Chapters, 50 Challenges)
 
-- **All Levels Unlocked by Default**: All built-in levels are immediately accessible without artificial paywalls or forced linear locks, allowing students and teachers to jump to any topic.
-- **Structured Learning Chapters (Recommended Path)**:
-  1. **Chapter 1: First Steps & Procedures** - Basic movement (`s`, `l`, `r`), walls, gray button traps, and parameterless procedures (`a:ssla`).
-  2. **Chapter 2: Counting & Numeric Recursion** - Single and multi-parameter numeric recursion (`a(X):sa(X-1)`), countdowns, and spirals.
-  3. **Chapter 3: Higher-Order Macros** - Passing command sequences as arguments (`a(X):XX`, `a(X):Xra(Xs)`), exponential step doublers, and alternating parameters.
-  4. **Chapter 4: Imagine Cup Classics** - Iconic competition levels (*Corners*, *Diamond*, *Snake*, *Windmill*, *Stairway*, etc.) that test wall alignment and strategic gray-button resets.
-- **Level Card Metadata**: Each level card shows a miniature map preview, difficulty badge, `max_bytes` ($M$), base points ($P$), and the user's personal best record (`Solved`, `Best Bytes`, `Best Score`).
+- **All Chapters Unlocked by Default (Unlock-Ready Architecture)**: All 10 chapters (50 curated levels) are immediately accessible without artificial paywalls or forced linear locks, while the underlying progression module (`src/core/progression.ts`) tracks per-chapter completion (`X / 5 Solved`) and supports enabling sequential chapter unlocking in the future.
+- **Structured 10-Chapter Learning Curriculum (5 Challenges per Chapter)**:
+  1. **Chapter 1: First Steps & Endless Loops** (`Beginner`) - Basic movement (`s`, `l`, `r`), reusable procedures, and infinite loops.
+  2. **Chapter 2: Walls & Precision Alignment** (`Beginner+`) - Harmless wall bumping and overshooting to align unequal corridors (includes `30x25`).
+  3. **Chapter 3: Numeric Countdown & Arithmetic** (`Elementary`) - Single-parameter numeric recursion (`a(X):sa(X-1)`), `X-1` / `X+1` math, and `<= 0` base cases.
+  4. **Chapter 4: Multi-Parameter Control & Base Cases** (`Intermediate`) - Two-parameter loops, rectangular sweeps (`32x25`, `35x25`), and converging frames.
+  5. **Chapter 5: Higher-Order Macros (Code as Data)** (`Intermediate+`) - Passing command sequences as arguments (`a(X):XX`, `a(X):Xra(Xs)`), mirror wings, and sawtooth waves (`36x25`).
+  6. **Chapter 6: Gray Button Mastery & Strategic Resets** (`Intermediate+`) - Zero-loss crossings, minefield slalom, and two-lap gray sacrifice loops.
+  7. **Chapter 7: Imagine Cup Classics & Symmetries** (`Advanced`) - Classic 4-fold diamonds, windmills, snakes, stairways, and pinwheels.
+  8. **Chapter 8: Space-Filling Curves & Fractals (HOJ)** (`Advanced+`) - Hilbert Order 2, Heighway Dragon Fold, Binary Tree Canopy, Sierpinski Steps, and Koch Cross.
+  9. **Chapter 9: Wide & Tall Arenas (26 to 40)** (`Expert`) - Expansive rectangular and square arenas (`40x25`, `25x40`, `32x32`, `38x30`, `40x40`).
+  10. **Chapter 10: Code Golf Grandmaster Gauntlet** (`Grandmaster`) - Ultra-compact byte-budget challenges culminating in a `40x40` final exam.
+- **Level Browser UX & Metadata**: Includes an overall campaign progress summary (`Solved X / 50`, total score), 1-click chapter filter pills (`All (50)`, `Ch 1`..`Ch 10`, `Custom`), per-chapter `X / 5 Solved` + difficulty badges, and per-level dimensions, `max_bytes`, base points, and personal best record (`Best Bytes`, `Best Score`).
 
 ---
 

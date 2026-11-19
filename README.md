@@ -291,8 +291,9 @@ b(1)
   - [src/core/interpreter.ts](file:///Users/victorxu/projects/herbert/src/core/interpreter.ts)：支持算术表达式传值求值（$[-255, +255]$ 边界检查与任一数值参数 $\le 0$ 隐式截断）及高阶指令序列词法闭包绑定的步进式生成器解释器。
   - [src/core/levelCodec.ts](file:///Users/victorxu/projects/herbert/src/core/levelCodec.ts)：标准 `.txt` 关卡文件解析器、序列化器、批量导入校验器（强制校验宽 $W$ 与高 $H$ 为 $[25, 40]$ 内的正整数）。
   - [src/core/gridEngine.ts](file:///Users/victorxu/projects/herbert/src/core/gridEngine.ts)：二维网格物理引擎、时间旅行快照会话（支持单步前进/后退/瞬间运行）与比例奖励积分计算器。
+  - [src/core/progression.ts](file:///Users/victorxu/projects/herbert/src/core/progression.ts)：章节完成度统计、总进度计算及可扩展的顺序章节解锁判定模块（当前默认全部开放，未来可一键启用按章节通关解锁机制）。
 - **内容与持久化层 (`src/content/`, `src/storage/`)**：
-  - [src/content/campaignLevels.ts](file:///Users/victorxu/projects/herbert/src/content/campaignLevels.ts)：4 大渐进章节共 9 道内置经典关卡（默认全部开放，包含 $35 \times 25$ 长方形奇数关卡）。
+  - [src/content/campaignLevels.ts](file:///Users/victorxu/projects/herbert/src/content/campaignLevels.ts) 与 `src/content/chapters/chapter01.ts` .. `chapter10.ts`：10 大渐进章节共 50 道内置经典与进阶关卡（每章 5 关，覆盖基础循环、撞墙对齐、数值递归、多参控制、高阶宏、灰钮战术重置、Imagine Cup 经典几何、Hilbert/Dragon/Koch 分形、最高 $40 \times 40$ 宽幅/长方形地图以及极限 Code Golf 挑战；默认全部开放，每道关卡均附带自动化验证通过的 H 参考解）。
   - [src/content/tutorialLessons.ts](file:///Users/victorxu/projects/herbert/src/content/tutorialLessons.ts)：5 步交互式新手快速教程。
   - [src/storage/localRepository.ts](file:///Users/victorxu/projects/herbert/src/storage/localRepository.ts)：基于 `localStorage` 的免登录本地持久化仓储。
 - **响应式 UI 与独立测试面板 (`src/ui/`)**：

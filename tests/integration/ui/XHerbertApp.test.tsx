@@ -53,14 +53,25 @@ describe('XHerbert Full UI Integration Tests (Play, Learn, Create & Theme)', () 
     expect(screen.getByTestId('solved-banner')).toBeInTheDocument();
   });
 
-  it('switches levels via the Level Selector Modal including rectangular 35x25 maps', () => {
+  it('switches levels via the 50-level Level Selector Modal with chapter filters and progress summary', () => {
     render(<App />);
     fireEvent.click(screen.getByTestId('level-selector-btn'));
     expect(screen.getByTestId('level-modal')).toBeInTheDocument();
+    expect(screen.getByTestId('campaign-progress-summary')).toHaveTextContent('0 / 50 Solved');
+
+    fireEvent.click(screen.getByTestId('chapter-filter-4'));
+    expect(screen.queryByTestId('select-level-c1-hello-herbert')).toBeNull();
+    expect(screen.getByTestId('select-level-c4-wide-boulevard-35x25')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('select-level-c4-wide-boulevard-35x25'));
-    expect(screen.getByTestId('current-level-title')).toHaveTextContent('4-2: Grand Boulevard (35x25)');
+    expect(screen.getByTestId('current-level-title')).toHaveTextContent('4-4: Grand Boulevard (35x25)');
     expect(screen.getByTestId('grid-dimensions-badge')).toHaveTextContent('35x25');
+
+    fireEvent.click(screen.getByTestId('level-selector-btn'));
+    fireEvent.click(screen.getByTestId('chapter-filter-9'));
+    fireEvent.click(screen.getByTestId('select-level-c9-grand-colosseum-40x40'));
+    expect(screen.getByTestId('current-level-title')).toHaveTextContent('9-5: Grand Colosseum (40x40)');
+    expect(screen.getByTestId('grid-dimensions-badge')).toHaveTextContent('40x40');
   });
 
   it('navigates to Learn mode, views the Cheat Sheet tab, loads sample solution, and completes a tutorial lesson', () => {
