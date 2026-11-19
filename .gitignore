@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+.stryker-tmp/
+playwright-report/
+test-results/
+.venv/
+__pycache__/
+*.egg-info/
+*.tsbuildinfo
+.DS_Store

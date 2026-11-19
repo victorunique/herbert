@@ -1,0 +1,10 @@
+[project]
+name = "xherbert-tools"
+version = "1.0.0"
+description = "CLI wrapper and verification utilities for XHerbert core modules"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+xherbert-cli = "scripts.cli_runner:main"
