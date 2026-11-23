@@ -143,12 +143,24 @@ function HintBar(props: { readonly hint?: string }): ReactElement | null {
   const [showHint, setShowHint] = useState<boolean>(false);
   if (!props.hint) return null;
   return (
-    <div className="px-3 py-1.5 bg-amber-500/5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-      <button type="button" onClick={() => setShowHint((h) => !h)} className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium hover:underline">
-        <Sparkles className="w-3.5 h-3.5" />
+    <div className="px-3 py-1.5 bg-amber-500/5 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1.5 text-xs">
+      <button
+        type="button"
+        data-testid="hint-toggle"
+        onClick={() => setShowHint((h) => !h)}
+        className="flex items-center gap-1 self-start shrink-0 whitespace-nowrap text-amber-600 dark:text-amber-400 font-medium hover:underline"
+      >
+        <Sparkles className="w-3.5 h-3.5 shrink-0" />
         <span>{showHint ? 'Hide Hint' : 'Need a Hint?'}</span>
       </button>
-      {showHint && <span className="text-slate-600 dark:text-slate-300 ml-2 truncate">{props.hint}</span>}
+      {showHint && (
+        <div
+          data-testid="hint-text"
+          className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed max-h-28 overflow-y-auto select-text"
+        >
+          {props.hint}
+        </div>
+      )}
     </div>
   );
 }

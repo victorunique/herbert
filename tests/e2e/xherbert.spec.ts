@@ -120,4 +120,39 @@ test.describe('XHerbert Multi-Viewport End-to-End Browser Suite', () => {
     await page.getByTestId('editor-test-btn').click();
     await expect(page.getByTestId('current-level-title')).toContainText('Uploaded Odd Arena');
   });
+
+  test('Play Mode: long hint wraps cleanly without truncation on desktop and mobile', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('level-selector-btn').click();
+    await page.getByTestId('select-level-c1-perimeter-patrol').click();
+    await expect(page.getByTestId('current-level-title')).toContainText('1-3: Perimeter Patrol');
+
+    const toggle = page.getByTestId('hint-toggle');
+    await toggle.click();
+    await expect(toggle).toHaveText('Hide Hint');
+
+    const hintText = page.getByTestId('hint-text');
+    await expect(hintText).toBeVisible();
+    await expect(hintText).toHaveText(
+      'Define a:ssssssra and call a to repeat 6 steps and a right turn forever.',
+    );
+
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const metrics = await hintText.evaluate((el) => ({
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        textOverflow: getComputedStyle(el).textOverflow,
+      }));
+      expect(metrics.textOverflow).not.toBe('ellipsis');
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+
+      const toggleBox = await toggle.boundingBox();
+      expect(toggleBox).not.toBeNull();
+      expect(toggleBox!.height).toBeLessThanOrEqual(28);
+    }
+  });
 });
